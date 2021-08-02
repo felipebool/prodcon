@@ -2,26 +2,26 @@ package cache
 
 import "sync"
 
-type cache struct {
+type Cache struct {
 	entries map[string]int
 	mutex   *sync.RWMutex
 }
 
-func (c *cache) Fetch(key string) int {
+func (c *Cache) Fetch(key string) int {
 	c.mutex.RLock()
 	value := c.entries[key]
 	c.mutex.RUnlock()
 	return value
 }
 
-func (c *cache) Save(key string) {
+func (c *Cache) Save(key string) {
 	c.mutex.Lock()
 	c.entries[key]++
 	c.mutex.Unlock()
 }
 
-func New() *cache {
-	return &cache{
+func New() *Cache {
+	return &Cache{
 		entries: make(map[string]int),
 		mutex:   &sync.RWMutex{},
 	}
