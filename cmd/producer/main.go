@@ -2,9 +2,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
-	"os"
 
 	"github.com/felipebool/prodcon/internal/token"
 )
@@ -14,19 +12,15 @@ var length = flag.Int("length", 7, "token length")
 var amount = flag.Int("amount", 10, "number of tokens to create")
 var path = flag.String("path", "storage/tokens", "save tokens to file")
 
+// run creates, and saves, tokens into file located in the value passed to filePath
 func run(tokenAmount, tokenLength int, filePath string) error {
-	fp, err := os.Create(filePath)
+	handler, err := token.New(filePath)
 	if err != nil {
 		return err
 	}
+	wg := handler.Create(tokenLength, tokenAmount)
+	wg.Wait()
 
-	for i := 0; i < tokenAmount; i++ {
-		_, err := fp.WriteString(fmt.Sprintf("%s\n", token.New(tokenLength)))
-		if err != nil {
-			return err
-		}
-	}
-	return fp.Close()
 }
 
 func main() {
