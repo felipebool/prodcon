@@ -7,11 +7,6 @@ import (
 	"time"
 )
 
-var (
-	charset    string     = "abcdefghijklmnopqrstuvwxyz"
-	seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
-)
-
 type Handler struct {
 	fp *os.File
 }
@@ -23,7 +18,7 @@ func (h *Handler) Create(length, amount int) error {
 	chunkLength := 100
 	for i := 0; i < amount; i++ {
 		if chunkCounter == chunkLength {
-			if err := h.SaveChunk(chunk); err != nil {
+			if _, err := h.fp.WriteString(chunk); err != nil {
 				return err
 			}
 			chunk = ""
@@ -33,23 +28,21 @@ func (h *Handler) Create(length, amount int) error {
 		chunk += fmt.Sprintf("%s\n", h.GetToken(length))
 		chunkCounter++
 	}
-	if err := h.SaveChunk(chunk); err != nil {
+	if _, err := h.fp.WriteString(chunk); err != nil {
 		return err
 	}
 	return nil
 }
 
 func (h *Handler) GetToken(length int) string {
+	var charset string = "abcdefghijklmnopqrstuvwxyz"
+	var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
+
 	b := make([]byte, length)
 	for i := range b {
 		b[i] = charset[seededRand.Intn(len(charset))]
 	}
 	return string(b)
-}
-
-func (h *Handler) SaveChunk(chunk string) error {
-	_, err := h.fp.WriteString(chunk)
-	return err
 }
 
 func New(filePath string) (*Handler, error) {
