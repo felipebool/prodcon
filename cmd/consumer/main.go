@@ -14,47 +14,39 @@ import (
 var path = flag.String("path", "storage/tokens", "read tokens from file")
 
 func populate(c *cache.Cache, db *sql.DB, filePath string) error {
+	if err := warmUpCache(c, filePath); err != nil {
+		return err
+	}
+
+	// create a pool of workers
+
+	// populate DB
+	for key, value := range c.Entries {
+		stmt, err := db.Prepare("INSERT INTO token(key, value) VALUES(?)")
+		if err != nil {
+			return err
+		}
+		_, err = stmt.Exec(key, value)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func warmUpCache(c *cache.Cache, filePath string) error {
 	fp, err := os.Open(filePath)
 	if err != nil {
 		return err
 	}
 	scanner := bufio.NewScanner(fp)
 	for scanner.Scan() {
-		if err := writeBack(c, db, scanner.Text()); err != nil {
-			return err
-		}
+		c.Save(scanner.Text())
 	}
 	if err := scanner.Err(); err != nil {
 		return err
 	}
 	return fp.Close()
-}
-
-func writeBack(c *cache.Cache, db *sql.DB, token string) error {
-	// write value to cache
-	c.Save(token)
-
-	// check cache
-	if c.Fetch(token) == 1 {
-		c.Save(token)
-		// save token into database
-		stmt, err := db.Prepare("INSERT INTO token(value) VALUES(?)")
-		if err != nil {
-			return err
-		}
-
-		res, err := stmt.Exec(token)
-		if err != nil {
-			return err
-		}
-
-		_, err = res.LastInsertId()
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
 
 func run(c *cache.Cache, db *sql.DB, filePath string) error {
