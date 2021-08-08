@@ -18,9 +18,7 @@ func run(tokenAmount, tokenLength int, filePath string) error {
 	if err != nil {
 		return err
 	}
-	wg := handler.Create(tokenLength, tokenAmount)
-	wg.Wait()
-
+	return handler.Create(tokenLength, tokenAmount)
 }
 
 func main() {

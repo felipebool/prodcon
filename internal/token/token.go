@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
-	"sync"
 	"time"
 )
 
@@ -14,33 +13,30 @@ var (
 )
 
 type Handler struct {
-	mu      sync.Mutex
-	fp      *os.File
-	wg      *sync.WaitGroup
-	toWrite chan string
-	toErr   chan error
+	fp *os.File
 }
 
 // Create creates <amount> tokens of length <lenght> and save it to a file
-func (h *Handler) Create(length, amount int) (*sync.WaitGroup, chan error) {
+func (h *Handler) Create(length, amount int) error {
 	chunk := ""
 	chunkCounter := 0
 	chunkLength := 100
 	for i := 0; i < amount; i++ {
 		if chunkCounter == chunkLength {
-			h.toWrite <- chunk
+			if err := h.SaveChunk(chunk); err != nil {
+				return err
+			}
 			chunk = ""
 			chunkCounter = 0
+			continue
 		}
 		chunk += fmt.Sprintf("%s\n", h.GetToken(length))
 		chunkCounter++
 	}
-	if chunk != "" {
-		h.toWrite <- chunk
+	if err := h.SaveChunk(chunk); err != nil {
+		return err
 	}
-
-	close(h.toWrite)
-	return h.wg, h.toErr
+	return nil
 }
 
 func (h *Handler) GetToken(length int) string {
@@ -51,8 +47,9 @@ func (h *Handler) GetToken(length int) string {
 	return string(b)
 }
 
-func (h *Handler) SaveChunk(chunk string) {
-	h.toWrite <- chunk
+func (h *Handler) SaveChunk(chunk string) error {
+	_, err := h.fp.WriteString(chunk)
+	return err
 }
 
 func New(filePath string) (*Handler, error) {
@@ -60,9 +57,5 @@ func New(filePath string) (*Handler, error) {
 	if err != nil {
 		return &Handler{}, err
 	}
-	return &Handler{
-		mu:      sync.Mutex{},
-		fp:      fp,
-		toWrite: make(chan string),
-	}, nil
+	return &Handler{fp: fp}, nil
 }
