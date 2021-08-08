@@ -1,7 +1,6 @@
 package cache_test
 
 import (
-	"sync"
 	"testing"
 
 	"github.com/felipebool/prodcon/internal/cache"
@@ -34,23 +33,12 @@ func Test_cache(t *testing.T) {
 
 	for label := range cases {
 		tc := cases[label]
-
-		// covers set and fetch
 		t.Run(label, func(t *testing.T) {
 			t.Parallel()
 			c := cache.New()
-			wg := &sync.WaitGroup{}
-
-			// concurrent access to cache
 			for _, key := range tc.elements {
-				wg.Add(1)
-				go func(key string) {
-					c.Save(key)
-					wg.Done()
-				}(key)
+				c.Save(key)
 			}
-			wg.Wait()
-
 			for key, value := range tc.expected {
 				got := c.Fetch(key)
 				if got != value {
