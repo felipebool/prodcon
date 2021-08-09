@@ -1,7 +1,5 @@
 .PHONY: run produce consume db clean migrate
 
-run: db produce consume
-
 stop: clean
 
 produce:
@@ -19,14 +17,6 @@ db:
 	-e POSTGRES_DB=prodcon \
 	-p 5433:5432 \
 	postgres:13.3-alpine
-
-migrate:
-	docker run -v migrations:/migrations \
-	--network host \
-	migrate/migrate \
-	-path=/migrations \
-	-database 'postgres://user@localhost:5433/prodcon?sslmode=disable' \
-	up 2
 
 clean:
 	@docker stop prodcon-postgres

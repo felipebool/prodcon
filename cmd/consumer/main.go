@@ -21,7 +21,6 @@ func populate(c *cache.Cache, db *sqlx.DB, filePath string) error {
 		return err
 	}
 
-	// populate DB
 	if err := populateDatabase(c, db, 10); err != nil {
 		return err
 	}
@@ -58,11 +57,14 @@ func populateDatabase(c *cache.Cache, db *sqlx.DB, workers int) error {
 					t.Value,
 					t.Total,
 				)
-				db.Exec(stmt)
+				if _, err := db.Exec(stmt); err != nil {
+					fmt.Println(err)
+				}
 			}
 		}()
 	}
 
+	// produce tokens
 	for value, total := range c.Entries {
 		tokens <- token.Entry{Value: value, Total: total}
 	}
@@ -80,6 +82,10 @@ func run(c *cache.Cache, db *sqlx.DB, filePath string) error {
 
 func main() {
 	flag.Parse()
+	schema := `CREATE TABLE IF NOT EXISTS token (
+		value varchar(7),
+		total integer
+	);`
 
 	dsn := "postgres://user@localhost:5433/prodcon?sslmode=disable"
 	db, err := sqlx.Connect("pgx", dsn)
@@ -87,6 +93,11 @@ func main() {
 		log.Fatal(err)
 	}
 	defer db.Close()
+
+	// create database schema
+	if _, err = db.Exec(schema); err != nil {
+		log.Fatal(err)
+	}
 
 	if err := run(cache.New(), db, *path); err != nil {
 		log.Fatal(err)
