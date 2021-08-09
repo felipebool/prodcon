@@ -23,5 +23,7 @@ func run(tokenAmount, tokenLength int, filePath string) error {
 
 func main() {
 	flag.Parse()
-	log.Fatal(run(*amount, *length, *path))
+	if err := run(*amount, *length, *path); err != nil {
+		log.Fatal(err)
+	}
 }

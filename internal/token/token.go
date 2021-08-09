@@ -11,6 +11,11 @@ type Handler struct {
 	fp *os.File
 }
 
+type Entry struct {
+	Value string
+	Total int
+}
+
 // Create creates <amount> tokens of length <lenght> and save it to a file
 func (h *Handler) Create(length, amount int) error {
 	chunk := ""
