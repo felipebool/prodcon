@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	"github.com/felipebool/prodcon/internal/cache"
-	"github.com/felipebool/prodcon/internal/token"
 	_ "github.com/jackc/pgx/stdlib"
 	"github.com/jmoiron/sqlx"
 )
@@ -27,7 +26,7 @@ func populate(c *cache.Cache, db *sqlx.DB, filePath string) error {
 	wg.Add(1)
 	go generateReport(c, total, wg)
 
-	if err := populateDatabase(c, db, 10); err != nil {
+	if err := populateDatabase(c, db, 100, 1000); err != nil {
 		return err
 	}
 
@@ -52,18 +51,17 @@ func warmUpCache(c *cache.Cache, filePath string) (int, error) {
 	return amount, fp.Close()
 }
 
-func populateDatabase(c *cache.Cache, db *sqlx.DB, workers int) error {
-	tokens := make(chan token.Entry, 100)
+func populateDatabase(c *cache.Cache, db *sqlx.DB, workers, batchSize int) error {
+	tokens := make(chan string, 1000)
 	wg := &sync.WaitGroup{}
 	wg.Add(workers)
 	for i := 0; i < workers; i++ {
 		go func() {
 			defer wg.Done()
-			for t := range tokens {
+			for values := range tokens {
 				stmt := fmt.Sprintf(
-					"INSERT INTO token (value, total) VALUES ('%s', %d)",
-					t.Value,
-					t.Total,
+					"INSERT INTO token (value, total) VALUES %s",
+					values,
 				)
 				if _, err := db.Exec(stmt); err != nil {
 					fmt.Println(err)
@@ -73,9 +71,18 @@ func populateDatabase(c *cache.Cache, db *sqlx.DB, workers int) error {
 	}
 
 	// produce tokens
+	entriesCount := 0
+	insertValues := ""
 	for value, total := range c.Entries {
-		tokens <- token.Entry{Value: value, Total: total}
+		if entriesCount == batchSize {
+			tokens <- insertValues[:len(insertValues)-1]
+			entriesCount = 0
+			insertValues = ""
+		}
+		insertValues += fmt.Sprintf("('%s', %d),", value, total)
+		entriesCount++
 	}
+	tokens <- insertValues[:len(insertValues)-1]
 	close(tokens)
 	wg.Wait()
 	return nil
@@ -118,6 +125,7 @@ func main() {
 		log.Fatal(err)
 	}
 
+	// run application
 	if err := run(cache.New(), db, *path); err != nil {
 		log.Fatal(err)
 	}
