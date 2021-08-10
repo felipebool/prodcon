@@ -1,4 +1,4 @@
-# prodcon
+# Prodcon
 Simple application to generate, read, and show, tokens.
 
 ## Solution
@@ -7,9 +7,9 @@ you must then read them, and save them into database. I decided to tackle this
 challenge by breaking it into two applications: producer and consumer.
 
 ### Producer
-This is the simplest one, a token generator that creates a file with 10 million
-(default) random tokens, one per line, each consisting of seven lowercase letters
-a-z, and save them to storage/tokens (default).
+This is the simplest one, a token generator that creates a file with random tokens,
+one per line, each consisting of seven lowercase letters a-z, and save them to 
+storage/tokens (default).
 
 The process of generating tokens is entirely based on random values. There is a
 charset, consisting of all the lowercase letters (\[a-z\]), and, for each position
@@ -19,7 +19,7 @@ in a string of size 7 one letter is randomly picked from the charset.
 The default values for the following parameters were set to what was asked in the
 challenge description, you can change them by overwriting its default values
 (--amount=1000000, to set amount to 1M, for example)
-* *amount*: the number of tokens to be generated (default: 10000000)
+* *amount*: the number of tokens to be generated (default: 1000000)
 * *length*: the length of the generated token (default: 7)
 * *path*: the file location to save the generated tokens (default: storage/tokens)
 
@@ -36,6 +36,18 @@ concurrently while saving the data into the database.
 For the consumer, the available parameters were added to make it easier to test
 different configurations for batch size and number of workers. The default values
 here worked for my hardware, but might not be the best set for other machines.
-* *batch*: the number of tokens to be present in a single insert (default: 1000)
-* *workers*: the number of goroutines used to access database (default: 100)
+* *batch*: the number of tokens to be present in a single insert (default: 100)
+* *workers*: the number of goroutines used to access database (default: 30)
 * *path*: the file location to save the generated tokens (default: storage/tokens)
+
+### Run this project
+* Prepare the database: `make db`
+* Generate the tokens (and save to file): `make produce`
+* Consume the tokens (from file, save to db): `make consume`
+
+### Conclusion
+I tried my best to implement everything, as asked, and I hope I did. The database
+access is done using workers, the inserts are in batch, the report generation
+is done in another *goroutine*, a hash map is used to find the duplicates, and
+I also tried to change a few configurations parameters to speed up the communication
+with Postgres.

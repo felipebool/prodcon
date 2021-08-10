@@ -14,8 +14,8 @@ import (
 )
 
 var path = flag.String("path", "storage/tokens", "read tokens from file")
-var batchSize = flag.Int("batch", 50, "batch size for insertions")
-var workersSize = flag.Int("workers", 5, "number of workers to access db")
+var batchSize = flag.Int("batch", 100, "batch size for insertions")
+var workersSize = flag.Int("workers", 30, "number of workers to access db")
 
 func populate(c *cache.Cache, db *sqlx.DB, filePath string, workers, batch int) error {
 	wg := &sync.WaitGroup{}
