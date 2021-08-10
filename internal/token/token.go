@@ -18,6 +18,8 @@ type Entry struct {
 
 // Create creates <amount> tokens of length <lenght> and save it to a file
 func (h *Handler) Create(length, amount int) error {
+	var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
+
 	chunk := ""
 	chunkCounter := 0
 	chunkLength := 100
@@ -29,7 +31,7 @@ func (h *Handler) Create(length, amount int) error {
 			chunk = ""
 			chunkCounter = 0
 		}
-		chunk += fmt.Sprintf("%s\n", h.GetToken(length))
+		chunk += fmt.Sprintf("%s\n", h.GetToken(length, seededRand))
 		chunkCounter++
 	}
 
@@ -39,9 +41,8 @@ func (h *Handler) Create(length, amount int) error {
 	return nil
 }
 
-func (h *Handler) GetToken(length int) string {
+func (h *Handler) GetToken(length int, seededRand *rand.Rand) string {
 	var charset string = "abcdefghijklmnopqrstuvwxyz"
-	var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 	b := make([]byte, length)
 	for i := range b {
 		b[i] = charset[seededRand.Intn(len(charset))]

@@ -14,8 +14,10 @@ import (
 )
 
 var path = flag.String("path", "storage/tokens", "read tokens from file")
+var batchSize = flag.Int("batch", 50, "batch size for insertions")
+var workersSize = flag.Int("workers", 5, "number of workers to access db")
 
-func populate(c *cache.Cache, db *sqlx.DB, filePath string) error {
+func populate(c *cache.Cache, db *sqlx.DB, filePath string, workers, batch int) error {
 	wg := &sync.WaitGroup{}
 
 	total, err := warmUpCache(c, filePath)
@@ -26,7 +28,7 @@ func populate(c *cache.Cache, db *sqlx.DB, filePath string) error {
 	wg.Add(1)
 	go generateReport(c, total, wg)
 
-	if err := populateDatabase(c, db, 100, 1000); err != nil {
+	if err := populateDatabase(c, db, workers, batch); err != nil {
 		return err
 	}
 
@@ -51,7 +53,7 @@ func warmUpCache(c *cache.Cache, filePath string) (int, error) {
 	return amount, fp.Close()
 }
 
-func populateDatabase(c *cache.Cache, db *sqlx.DB, workers, batchSize int) error {
+func populateDatabase(c *cache.Cache, db *sqlx.DB, workers, batch int) error {
 	tokens := make(chan string, 1000)
 	wg := &sync.WaitGroup{}
 	wg.Add(workers)
@@ -74,7 +76,7 @@ func populateDatabase(c *cache.Cache, db *sqlx.DB, workers, batchSize int) error
 	entriesCount := 0
 	insertValues := ""
 	for value, total := range c.Entries {
-		if entriesCount == batchSize {
+		if entriesCount == batch {
 			tokens <- insertValues[:len(insertValues)-1]
 			entriesCount = 0
 			insertValues = ""
@@ -99,8 +101,8 @@ func generateReport(c *cache.Cache, tokenAmount int, wg *sync.WaitGroup) {
 	}
 }
 
-func run(c *cache.Cache, db *sqlx.DB, filePath string) error {
-	if err := populate(c, db, filePath); err != nil {
+func run(c *cache.Cache, db *sqlx.DB, filePath string, batch, workers int) error {
+	if err := populate(c, db, filePath, batch, workers); err != nil {
 		return err
 	}
 	return nil
@@ -126,7 +128,7 @@ func main() {
 	}
 
 	// run application
-	if err := run(cache.New(), db, *path); err != nil {
+	if err := run(cache.New(), db, *path, *batchSize, *workersSize); err != nil {
 		log.Fatal(err)
 	}
 }
