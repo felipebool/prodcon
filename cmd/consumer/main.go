@@ -17,35 +17,43 @@ import (
 var path = flag.String("path", "storage/tokens", "read tokens from file")
 
 func populate(c *cache.Cache, db *sqlx.DB, filePath string) error {
-	if err := warmUpCache(c, filePath); err != nil {
+	wg := &sync.WaitGroup{}
+
+	total, err := warmUpCache(c, filePath)
+	if err != nil {
 		return err
 	}
+
+	wg.Add(1)
+	go generateReport(c, total, wg)
 
 	if err := populateDatabase(c, db, 10); err != nil {
 		return err
 	}
 
+	wg.Wait()
 	return nil
 }
 
-func warmUpCache(c *cache.Cache, filePath string) error {
+func warmUpCache(c *cache.Cache, filePath string) (int, error) {
+	amount := 0
 	fp, err := os.Open(filePath)
 	if err != nil {
-		return err
+		return 0, err
 	}
 	scanner := bufio.NewScanner(fp)
 	for scanner.Scan() {
+		amount++
 		c.Save(scanner.Text())
 	}
 	if err := scanner.Err(); err != nil {
-		return err
+		return 0, err
 	}
-	return fp.Close()
+	return amount, fp.Close()
 }
 
 func populateDatabase(c *cache.Cache, db *sqlx.DB, workers int) error {
 	tokens := make(chan token.Entry, 100)
-
 	wg := &sync.WaitGroup{}
 	wg.Add(workers)
 	for i := 0; i < workers; i++ {
@@ -71,6 +79,17 @@ func populateDatabase(c *cache.Cache, db *sqlx.DB, workers int) error {
 	close(tokens)
 	wg.Wait()
 	return nil
+}
+
+// generateReport produces a list of all non-unique tokens and their frequencies
+func generateReport(c *cache.Cache, tokenAmount int, wg *sync.WaitGroup) {
+	defer wg.Done()
+	fmt.Printf("token\tfrequency\n")
+	for value, total := range c.Entries {
+		if total > 1 {
+			fmt.Printf("%s\t%d\n", value, (total / tokenAmount))
+		}
+	}
 }
 
 func run(c *cache.Cache, db *sqlx.DB, filePath string) error {
