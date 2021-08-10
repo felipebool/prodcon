@@ -84,10 +84,10 @@ func populateDatabase(c *cache.Cache, db *sqlx.DB, workers int) error {
 // generateReport produces a list of all non-unique tokens and their frequencies
 func generateReport(c *cache.Cache, tokenAmount int, wg *sync.WaitGroup) {
 	defer wg.Done()
-	fmt.Printf("token\tfrequency\n")
+	fmt.Printf("token\tfrequency (%d)\n", tokenAmount)
 	for value, total := range c.Entries {
 		if total > 1 {
-			fmt.Printf("%s\t%d\n", value, (total / tokenAmount))
+			fmt.Printf("%s\t%f\n", value, float32(total)/float32(tokenAmount))
 		}
 	}
 }

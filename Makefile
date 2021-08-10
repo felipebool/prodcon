@@ -23,4 +23,4 @@ clean:
 	@docker rm prodcon-postgres
 	@rm storage/tokens
 
-#psql -d prodcon -U user -h localhost -p 5432 -W
+#psql -d prodcon -U user -h localhost -p 5432
