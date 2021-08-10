@@ -28,11 +28,11 @@ func (h *Handler) Create(length, amount int) error {
 			}
 			chunk = ""
 			chunkCounter = 0
-			continue
 		}
 		chunk += fmt.Sprintf("%s\n", h.GetToken(length))
 		chunkCounter++
 	}
+
 	if _, err := h.fp.WriteString(chunk); err != nil {
 		return err
 	}
@@ -42,7 +42,6 @@ func (h *Handler) Create(length, amount int) error {
 func (h *Handler) GetToken(length int) string {
 	var charset string = "abcdefghijklmnopqrstuvwxyz"
 	var seededRand *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
-
 	b := make([]byte, length)
 	for i := range b {
 		b[i] = charset[seededRand.Intn(len(charset))]

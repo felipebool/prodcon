@@ -3,7 +3,7 @@
 stop: clean
 
 produce:
-	@go run cmd/producer/main.go --length=7 --amount=500 --path storage/tokens
+	@go run cmd/producer/main.go --length=7 --amount=1000 --path storage/tokens
 
 consume:
 	@go run cmd/consumer/main.go --path storage/tokens
