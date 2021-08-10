@@ -41,13 +41,16 @@ here worked for my hardware, but might not be the best set for other machines.
 * *path*: the file location to save the generated tokens (default: storage/tokens)
 
 ### Run this project
+Run the following commands in order to see the project working.
 * Prepare the database: `make db`
 * Generate the tokens (and save to file): `make produce`
 * Consume the tokens (from file, save to db): `make consume`
 
+There's also a shortcut to run the tests: `make test`.
+
 ### Conclusion
 I tried my best to implement everything, as asked, and I hope I did. The database
 access is done using workers, the inserts are in batch, the report generation
-is done in another *goroutine*, a hash map is used to find the duplicates, and
-I also tried to change a few configurations parameters to speed up the communication
-with Postgres.
+is done in another *goroutine*, a hash map is used to find the duplicates (in memory),
+the tokens are generated and written to a file in chunks, and I also tried to change
+a few configurations parameters to speed up the communication with Postgres.

@@ -1,4 +1,4 @@
-.PHONY: run produce consume db clean migrate
+.PHONY: produce consume db clean test
 
 stop: clean
 
@@ -25,6 +25,9 @@ clean:
 	@docker stop prodcon-postgres
 	@docker rm prodcon-postgres
 	@rm storage/tokens
+
+test:
+	@go test ./...
 
 # ------------------------------------------------------------------------------
 # To check the saved data inside the database,

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"sync"
@@ -17,10 +18,11 @@ var path = flag.String("path", "storage/tokens", "read tokens from file")
 var batchSize = flag.Int("batch", 100, "batch size for insertions")
 var workersSize = flag.Int("workers", 30, "number of workers to access db")
 
-func populate(c *cache.Cache, db *sqlx.DB, filePath string, workers, batch int) error {
+// populate calls warmUpCache, generateReport and populateDatabase
+func populate(c *cache.Cache, db *sqlx.DB, fp io.Reader, workers, batch int) error {
 	wg := &sync.WaitGroup{}
 
-	total, err := warmUpCache(c, filePath)
+	total, err := warmUpCache(c, fp)
 	if err != nil {
 		return err
 	}
@@ -36,12 +38,9 @@ func populate(c *cache.Cache, db *sqlx.DB, filePath string, workers, batch int) 
 	return nil
 }
 
-func warmUpCache(c *cache.Cache, filePath string) (int, error) {
+// warmUpCache reads the entries from file and savem them to memory
+func warmUpCache(c *cache.Cache, fp io.Reader) (int, error) {
 	amount := 0
-	fp, err := os.Open(filePath)
-	if err != nil {
-		return 0, err
-	}
 	scanner := bufio.NewScanner(fp)
 	for scanner.Scan() {
 		amount++
@@ -50,9 +49,10 @@ func warmUpCache(c *cache.Cache, filePath string) (int, error) {
 	if err := scanner.Err(); err != nil {
 		return 0, err
 	}
-	return amount, fp.Close()
+	return amount, nil
 }
 
+// populateDatabase reads batches of entries from channel and save them into db
 func populateDatabase(c *cache.Cache, db *sqlx.DB, workers, batch int) error {
 	tokens := make(chan string, 1000)
 	wg := &sync.WaitGroup{}
@@ -102,7 +102,13 @@ func generateReport(c *cache.Cache, tokenAmount int, wg *sync.WaitGroup) {
 }
 
 func run(c *cache.Cache, db *sqlx.DB, filePath string, batch, workers int) error {
-	if err := populate(c, db, filePath, batch, workers); err != nil {
+	fp, err := os.Open(filePath)
+	if err != nil {
+		return err
+	}
+	defer fp.Close()
+
+	if err := populate(c, db, fp, batch, workers); err != nil {
 		return err
 	}
 	return nil

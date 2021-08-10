@@ -41,6 +41,7 @@ func (h *Handler) Create(length, amount int) error {
 	return nil
 }
 
+// GetToken generates tokens using [a-z] charset and choosing randomly
 func (h *Handler) GetToken(length int, seededRand *rand.Rand) string {
 	var charset string = "abcdefghijklmnopqrstuvwxyz"
 	b := make([]byte, length)
